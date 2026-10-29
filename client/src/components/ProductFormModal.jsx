@@ -13,7 +13,8 @@ export default function ProductFormModal({ product, categories, onSave, onClose 
     min_stock: product?.min_stock ?? 0,
     cost_price: product?.cost_price ?? 0,
     sale_price: product?.sale_price ?? 0,
-    track_stock: product?.track_stock ?? true
+    track_stock: product?.track_stock ?? true,
+    is_sellable: product?.is_sellable ?? true
   })
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -128,6 +129,15 @@ export default function ProductFormModal({ product, categories, onSave, onClose 
             </label>
           </div>
         </div>
+
+        <label className="flex items-center gap-2 text-xs text-carbon/70">
+          <input
+            type="checkbox"
+            checked={form.is_sellable}
+            onChange={(e) => update('is_sellable', e.target.checked)}
+          />
+          Se vende en la carta (desmarcalo para insumos como carbón o sal)
+        </label>
 
         <div className="grid grid-cols-2 gap-3">
           <div>

@@ -9,15 +9,21 @@ import {
 } from '../lib/api/products.js'
 import ProductFormModal from '../components/ProductFormModal.jsx'
 import StockMovementModal from '../components/StockMovementModal.jsx'
+import StockHistoryModal from '../components/StockHistoryModal.jsx'
+import { money, qty } from '../lib/format.js'
+import { btnPrimary, btnSmall, card, emptyBox, inputClass } from '../lib/ui.js'
 
 export default function Stock() {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
+  const [search, setSearch] = useState('')
+  const [onlyLow, setOnlyLow] = useState(false)
 
   const [editingProduct, setEditingProduct] = useState(null) // null=cerrado, {}=nuevo, {...}=editar
   const [movement, setMovement] = useState(null) // { product, type }
+  const [historyOf, setHistoryOf] = useState(null)
 
   async function loadAll() {
     setLoading(true)
@@ -49,8 +55,12 @@ export default function Stock() {
 
   async function handleDelete(product) {
     if (!confirm(`¿Seguro que querés eliminar "${product.name}"?`)) return
-    await deleteProduct(product.id)
-    await loadAll()
+    try {
+      await deleteProduct(product.id)
+      await loadAll()
+    } catch (err) {
+      setErrorMsg('No se pudo eliminar: ' + err.message)
+    }
   }
 
   async function handleConfirmMovement(quantity, reason) {
@@ -58,34 +68,49 @@ export default function Stock() {
       productId: movement.product.id,
       type: movement.type,
       quantity,
-      reason,
-      currentStock: movement.product.stock
+      reason
     })
     setMovement(null)
     await loadAll()
   }
 
   function estadoStock(p) {
+    if (!p.track_stock) return null
     if (p.stock <= 0) return { label: 'Sin stock', className: 'bg-estado-ocupada/10 text-estado-ocupada' }
     if (p.stock <= p.min_stock) return { label: 'Stock bajo', className: 'bg-estado-preparacion/10 text-estado-preparacion' }
     return null
   }
 
+  const visible = products.filter(
+    (p) =>
+      p.name.toLowerCase().includes(search.trim().toLowerCase()) && (!onlyLow || estadoStock(p))
+  )
+
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl text-carbon">Stock</h2>
           <p className="mt-1 text-sm text-carbon/60">
             Productos, cantidades disponibles y movimientos.
           </p>
         </div>
-        <button
-          onClick={() => setEditingProduct({})}
-          className="rounded-md bg-brasa px-4 py-2.5 text-sm font-medium text-white hover:bg-brasa-dark"
-        >
+        <button onClick={() => setEditingProduct({})} className={btnPrimary}>
           + Nuevo producto
         </button>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <input
+          className={`${inputClass} max-w-xs`}
+          placeholder="Buscar producto..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <label className="flex items-center gap-2 text-sm text-carbon/70">
+          <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} />
+          Solo stock bajo
+        </label>
       </div>
 
       {errorMsg && <p className="mt-4 text-sm text-estado-ocupada">{errorMsg}</p>}
@@ -93,64 +118,67 @@ export default function Stock() {
       {loading ? (
         <p className="mt-6 text-sm text-carbon/50">Cargando...</p>
       ) : products.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-dashed border-carbon/20 p-10 text-center text-sm text-carbon/50">
+        <div className={`mt-6 ${emptyBox}`}>
           Todavía no cargaste ningún producto. Tocá "+ Nuevo producto" para empezar.
         </div>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-lg border border-carbon/10 bg-white">
+        <div className={`mt-4 overflow-x-auto ${card}`}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-carbon/10 text-left text-xs text-carbon/50">
                 <th className="px-4 py-3">Producto</th>
                 <th className="px-4 py-3">Categoría</th>
                 <th className="px-4 py-3">Stock</th>
-                <th className="px-4 py-3">Precio venta</th>
+                <th className="px-4 py-3">Compra</th>
+                <th className="px-4 py-3">Venta</th>
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => {
+              {visible.map((p) => {
                 const estado = estadoStock(p)
                 return (
                   <tr key={p.id} className="border-b border-carbon/5 last:border-0">
-                    <td className="px-4 py-3 font-medium">{p.name}</td>
-                    <td className="px-4 py-3 text-carbon/60">{p.categories?.name ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      {p.stock} {p.unit}
+                    <td className="px-4 py-3 font-medium">
+                      {p.name}
+                      {!p.is_sellable && <span className="ml-2 text-xs text-carbon/40">(insumo)</span>}
                     </td>
-                    <td className="px-4 py-3">${p.sale_price}</td>
+                    <td className="px-4 py-3 text-carbon/60">{p.categories?.name ?? '—'}</td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      {p.track_stock ? `${qty(p.stock)} ${p.unit}` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-carbon/60">{money(p.cost_price)}</td>
+                    <td className="px-4 py-3">{p.is_sellable ? money(p.sale_price) : '—'}</td>
                     <td className="px-4 py-3">
                       {estado && (
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${estado.className}`}>
+                        <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${estado.className}`}>
                           {estado.label}
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex justify-end gap-2 text-xs">
-                        <button
-                          onClick={() => setMovement({ product: p, type: 'entrada' })}
-                          className="rounded border border-carbon/15 px-2 py-1 hover:bg-crema"
-                        >
-                          + Entrada
-                        </button>
-                        <button
-                          onClick={() => setMovement({ product: p, type: 'salida' })}
-                          className="rounded border border-carbon/15 px-2 py-1 hover:bg-crema"
-                        >
-                          − Salida
-                        </button>
-                        <button
-                          onClick={() => setEditingProduct(p)}
-                          className="rounded border border-carbon/15 px-2 py-1 hover:bg-crema"
-                        >
+                      <div className="flex justify-end gap-1.5">
+                        {p.track_stock && (
+                          <>
+                            <button onClick={() => setMovement({ product: p, type: 'entrada' })} className={btnSmall}>
+                              + Entrada
+                            </button>
+                            <button onClick={() => setMovement({ product: p, type: 'salida' })} className={btnSmall}>
+                              − Salida
+                            </button>
+                            <button onClick={() => setMovement({ product: p, type: 'ajuste' })} className={btnSmall}>
+                              Ajustar
+                            </button>
+                            <button onClick={() => setHistoryOf(p)} className={btnSmall}>
+                              Historial
+                            </button>
+                          </>
+                        )}
+                        <button onClick={() => setEditingProduct(p)} className={btnSmall}>
                           Editar
                         </button>
-                        <button
-                          onClick={() => handleDelete(p)}
-                          className="rounded border border-carbon/15 px-2 py-1 text-estado-ocupada hover:bg-crema"
-                        >
+                        <button onClick={() => handleDelete(p)} className={`${btnSmall} text-estado-ocupada`}>
                           Eliminar
                         </button>
                       </div>
@@ -180,6 +208,8 @@ export default function Stock() {
           onClose={() => setMovement(null)}
         />
       )}
+
+      {historyOf && <StockHistoryModal product={historyOf} onClose={() => setHistoryOf(null)} />}
     </div>
   )
 }

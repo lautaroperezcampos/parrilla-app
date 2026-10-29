@@ -3,11 +3,11 @@ import { supabase } from '../supabaseClient'
 // Todas las funciones que hablan con la tabla "products" y "stock_movements"
 // viven acá, para no repetir código de conexión en cada pantalla.
 
-export async function getCategories() {
+export async function getCategories(type = 'producto') {
   const { data, error } = await supabase
     .from('categories')
     .select('*')
-    .eq('type', 'producto')
+    .eq('type', type)
     .order('name')
   if (error) throw error
   return data
@@ -34,9 +34,12 @@ export async function createProduct(product) {
 }
 
 export async function updateProduct(id, changes) {
+  // El stock nunca se cambia editando el producto: solo con movimientos,
+  // así queda registrado en el historial.
+  const { stock, ...rest } = changes
   const { data, error } = await supabase
     .from('products')
-    .update(changes)
+    .update(rest)
     .eq('id', id)
     .select()
     .single()
@@ -54,30 +57,26 @@ export async function deleteProduct(id) {
   if (error) throw error
 }
 
-export async function registerStockMovement({ productId, type, quantity, reason, currentStock }) {
-  const stockBefore = currentStock
-  const stockAfter = type === 'entrada' ? stockBefore + quantity : stockBefore - quantity
-
-  if (stockAfter < 0) {
-    throw new Error('No podés sacar más stock del que hay disponible')
-  }
-
-  const { error: moveError } = await supabase.from('stock_movements').insert({
-    product_id: productId,
-    type,
-    quantity,
-    stock_before: stockBefore,
-    stock_after: stockAfter,
-    reason
+// type: 'entrada' | 'salida' | 'ajuste'. En 'ajuste', quantity es el
+// stock contado (el nuevo total). Se hace todo junto en la base.
+export async function registerStockMovement({ productId, type, quantity, reason }) {
+  const { data, error } = await supabase.rpc('register_stock_movement', {
+    p_product_id: productId,
+    p_type: type,
+    p_quantity: quantity,
+    p_reason: reason || null
   })
-  if (moveError) throw moveError
+  if (error) throw error
+  return data
+}
 
+export async function getStockMovements(productId) {
   const { data, error } = await supabase
-    .from('products')
-    .update({ stock: stockAfter })
-    .eq('id', productId)
-    .select()
-    .single()
+    .from('stock_movements')
+    .select('*')
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false })
+    .limit(100)
   if (error) throw error
   return data
 }

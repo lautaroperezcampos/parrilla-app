@@ -7,10 +7,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    'Faltan las variables VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY. Revisá tu archivo .env'
-  )
-}
+// Si faltan, la app muestra un aviso en vez de quedar en blanco.
+export const supabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = supabaseConfigured ? createClient(supabaseUrl, supabaseAnonKey) : null
