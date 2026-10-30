@@ -49,8 +49,9 @@ function Layout() {
           <button onClick={() => setMenuOpen(true)} className="text-xl" aria-label="Abrir menú">
             ☰
           </button>
+          <img src="/logo.png" alt="" className="h-8 w-8 rounded-full" />
           <span className="font-display">
-            Parrilla <span className="text-brasa">App</span>
+            Don Blas <span className="text-brasa">App</span>
           </span>
         </header>
 

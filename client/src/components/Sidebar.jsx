@@ -28,9 +28,10 @@ export default function Sidebar({ open, onClose }) {
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="px-6 py-7">
+        <div className="flex items-center gap-3 px-5 py-6">
+          <img src="/logo.png" alt="Parrilla Don Blas" className="h-14 w-14 rounded-full" />
           <h1 className="font-display text-xl leading-tight text-crema">
-            Parrilla
+            Don Blas
             <br />
             <span className="text-brasa">App</span>
           </h1>
