@@ -1,14 +1,61 @@
-# Parrilla App
+# Don Blas App
 
-Sistema de gestión para la parrilla: mesas y pedidos, ventas, gastos,
-stock, proveedores, caja y reportes. Funciona en la compu, la tablet y
-el celular, y todos los dispositivos ven los mismos datos al instante.
+Sistema de gestión para la Parrilla & Parador "Don Blas": mesas y pedidos,
+ventas, gastos, stock, proveedores, caja y reportes. Funciona en la compu,
+la tablet y el celular, y todos los dispositivos ven los mismos datos al
+instante.
 
-- **Frontend:** React + Vite + Tailwind, en `client/`. Se publica en Vercel.
-- **Base de datos:** Supabase (Postgres en la nube).
-  - `supabase/schema.sql` — tablas iniciales.
-  - `supabase/migrations/002_app_completa.sql` — cobros, caja, reportes y
-    seguridad (login).
+---
+
+## Con qué está hecha
+
+### Lenguajes
+
+| Lenguaje | Dónde se usa | Para qué |
+|---|---|---|
+| **JavaScript** (con **JSX**) | `client/src/` | Todo lo que se ve y se toca en la app: pantallas, botones, formularios. JSX es JavaScript que permite escribir la estructura de la pantalla parecido a HTML. |
+| **SQL** (PostgreSQL) | `supabase/` | La base de datos: las tablas, las reglas de seguridad y las operaciones importantes (cobrar, abrir y cerrar caja, mover stock, reportes), que se hacen dentro de la base para que nunca queden a medias. |
+| **HTML y CSS** | `client/index.html`, `client/src/index.css` | La página base donde se carga la app y los estilos generales. |
+
+### Programas y servicios
+
+| Programa / servicio | Para qué sirve |
+|---|---|
+| **React** | Librería para armar la interfaz con pantallas y componentes reutilizables (por ejemplo, la misma ventana de pedido se usa en Mesas y en Ventas). |
+| **Vite** | Herramienta que corre la app en la compu mientras se programa (`npm run dev`) y la empaqueta lista para publicar (`npm run build`). |
+| **Tailwind CSS** | Sistema de estilos: colores, tamaños y la adaptación al celular se escriben con clases cortas, con la paleta propia de la parrilla (carbón, brasa, crema). |
+| **React Router** | Maneja las secciones de la app (`/mesas`, `/ventas`, `/caja`...) sin recargar la página. |
+| **Recharts** | Dibuja los gráficos del Dashboard y de Reportes. |
+| **Supabase** | Servicio en la nube que da la base de datos **PostgreSQL**, el **login** de usuarios y las actualizaciones **en tiempo real** (las mesas se actualizan solas en todos los dispositivos). |
+| **Vercel** | Publica la app en internet (`parrilla-app-nine.vercel.app`). Cada vez que se sube un cambio a GitHub, la actualiza sola. |
+| **GitHub** | Guarda el código y el historial de cambios. Es de donde Vercel toma la app para publicarla. |
+| **Node.js y npm** | Necesarios en la compu para instalar las librerías (`npm install`) y correr Vite. No se usan en la app publicada. |
+| **Git** | Programa para registrar los cambios del código y subirlos a GitHub (`git commit`, `git push`). |
+
+### Cómo se conecta todo
+
+```
+Celular / compu (navegador)
+        │  abre la app desde
+        ▼
+     Vercel  ◄── toma el código de ── GitHub
+        │
+        │  la app lee y guarda datos en
+        ▼
+    Supabase (login + base de datos PostgreSQL)
+```
+
+### Organización de las carpetas
+
+- `client/` — la app (React).
+  - `src/pages/` — una pantalla por sección (Mesas, Ventas, Caja...).
+  - `src/components/` — partes reutilizables (ventanas, gráficos, filtros).
+  - `src/lib/api/` — todo lo que habla con la base de datos.
+  - `public/logo.png` — el logo.
+- `supabase/` — la base de datos.
+  - `schema.sql` — tablas iniciales.
+  - `migrations/002_app_completa.sql` — cobros, caja, reportes y seguridad (login).
+  - `datos/carta_don_blas.sql` — carga los productos de la carta.
 
 ---
 
