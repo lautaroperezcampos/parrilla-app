@@ -8,12 +8,13 @@ import {
   markOrderSent,
   payOrder,
   removeOrderItem,
+  setOrderAdjustment,
   setOrderNotes,
   setOrderStatus,
   updateOrderItemQuantity
 } from '../lib/api/orders.js'
 import { getProducts } from '../lib/api/products.js'
-import { money, qty, PAYMENT_METHODS } from '../lib/format.js'
+import { adjustmentLabel, money, qty, PAYMENT_METHODS } from '../lib/format.js'
 import { printBill, printComanda, STATIONS } from '../lib/print.js'
 import { btnPrimary, btnSecondary, btnSmall, inputClass } from '../lib/ui.js'
 
@@ -56,6 +57,7 @@ export default function OrderEditor({ orderId, onClose }) {
   const [busy, setBusy] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [paying, setPaying] = useState(false)
+  const [adjusting, setAdjusting] = useState(false)
 
   async function reload() {
     setOrder(await getOrder(orderId))
@@ -77,8 +79,10 @@ export default function OrderEditor({ orderId, onClose }) {
     try {
       await action()
       await reload()
+      return true
     } catch (err) {
       setErrorMsg(err.message)
+      return false
     } finally {
       setBusy(false)
     }
@@ -304,11 +308,51 @@ export default function OrderEditor({ orderId, onClose }) {
                 </div>
                 ))
               )}
-              <div className="flex justify-between border-t border-carbon/10 px-3 py-3">
-                <span className="text-sm text-carbon/60">Total</span>
-                <span className="font-display text-xl">{money(order.total)}</span>
+              <div className="space-y-1 border-t border-carbon/10 px-3 py-3">
+                {adjustmentLabel(order) && (
+                  <>
+                    <div className="flex justify-between text-sm text-carbon/60">
+                      <span>Subtotal</span>
+                      <span>{money(order.subtotal)}</span>
+                    </div>
+                    <div
+                      className={`flex justify-between text-sm ${
+                        Number(order.adjustment_value) < 0 ? 'text-estado-libre' : 'text-brasa'
+                      }`}
+                    >
+                      <span>{adjustmentLabel(order)}</span>
+                      <span>
+                        {Number(order.total) >= Number(order.subtotal) ? '+ ' : '− '}
+                        {money(Math.abs(order.total - order.subtotal))}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-carbon/60">Total</span>
+                  <span className="font-display text-xl">{money(order.total)}</span>
+                </div>
               </div>
             </div>
+
+            {adjusting ? (
+              <AdjustmentPanel
+                order={order}
+                busy={busy}
+                onApply={(kind, value) =>
+                  run(() => setOrderAdjustment(orderId, kind, value)).then((ok) => ok && setAdjusting(false))
+                }
+                onClose={() => setAdjusting(false)}
+              />
+            ) : (
+              <button
+                disabled={busy || order.order_items.length === 0}
+                onClick={() => setAdjusting(true)}
+                className="self-start text-sm text-brasa underline disabled:opacity-50"
+              >
+                {adjustmentLabel(order) ? 'Cambiar descuento / recargo' : '+ Descuento / recargo'}
+              </button>
+            )}
 
             <NotesInput
               key={order.id}
@@ -375,6 +419,82 @@ export default function OrderEditor({ orderId, onClose }) {
         </div>
       )}
     </Modal>
+  )
+}
+
+// Descuento o recargo, por porcentaje o por monto fijo.
+function AdjustmentPanel({ order, busy, onApply, onClose }) {
+  const current = Number(order.adjustment_value)
+  const [mode, setMode] = useState(current > 0 ? 'recargo' : 'descuento')
+  const [kind, setKind] = useState(order.adjustment_kind ?? 'porcentaje')
+  const [value, setValue] = useState(order.adjustment_kind ? String(Math.abs(current)) : '')
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const amount = Number(String(value).replace(',', '.'))
+  const subtotal = Number(order.subtotal)
+  const delta = kind === 'porcentaje' ? (subtotal * amount) / 100 : amount
+  const preview = Math.max(0, Math.round(subtotal + (mode === 'descuento' ? -delta : delta)))
+
+  function handleApply() {
+    if (!(amount > 0)) return setErrorMsg('Ingresá un valor mayor a cero')
+    if (kind === 'porcentaje' && amount > 100) return setErrorMsg('El porcentaje no puede pasar de 100')
+    setErrorMsg('')
+    onApply(kind, mode === 'descuento' ? -amount : amount)
+  }
+
+  const toggle = (active) =>
+    `flex-1 rounded-md px-3 py-1.5 text-sm ${active ? 'bg-carbon text-crema' : 'bg-white text-carbon/70 ring-1 ring-carbon/10'}`
+
+  return (
+    <div className="space-y-2 rounded-md bg-crema p-3">
+      <div className="flex gap-2">
+        <button className={toggle(mode === 'descuento')} onClick={() => setMode('descuento')}>
+          Descuento
+        </button>
+        <button className={toggle(mode === 'recargo')} onClick={() => setMode('recargo')}>
+          Recargo
+        </button>
+      </div>
+      <div className="flex gap-2">
+        <button className={toggle(kind === 'porcentaje')} onClick={() => setKind('porcentaje')}>
+          Porcentaje (%)
+        </button>
+        <button className={toggle(kind === 'monto')} onClick={() => setKind('monto')}>
+          Monto ($)
+        </button>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-carbon/60">{kind === 'porcentaje' ? '%' : '$'}</span>
+        <input
+          inputMode="decimal"
+          autoFocus
+          className={inputClass}
+          placeholder={kind === 'porcentaje' ? 'Ej: 10' : 'Ej: 2000'}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleApply()}
+        />
+      </div>
+      {amount > 0 && (
+        <p className="text-sm text-carbon/70">
+          Total con {mode}: <strong>{money(preview)}</strong>
+        </p>
+      )}
+      {errorMsg && <p className="text-sm text-estado-ocupada">{errorMsg}</p>}
+      <div className="flex gap-2">
+        <button disabled={busy} onClick={handleApply} className={`${btnPrimary} flex-1`}>
+          Aplicar
+        </button>
+        {order.adjustment_kind && (
+          <button disabled={busy} onClick={() => onApply(null, null)} className={btnSecondary}>
+            Quitar
+          </button>
+        )}
+        <button onClick={onClose} className={btnSecondary}>
+          Volver
+        </button>
+      </div>
+    </div>
   )
 }
 

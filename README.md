@@ -56,6 +56,7 @@ Celular / compu (navegador)
   - `schema.sql` — tablas iniciales.
   - `migrations/002_app_completa.sql` — cobros, caja, reportes y seguridad (login).
   - `migrations/003_comandas.sql` — comandas para parrilla y cocina.
+  - `migrations/004_descuentos.sql` — descuentos y recargos en los pedidos.
   - `datos/carta_don_blas.sql` — carga los productos de la carta.
 
 ---
@@ -130,6 +131,14 @@ Y abrí `http://localhost:5173`. El archivo `client/.env` tiene que tener
    si sobra o falta plata y guarda el cierre en el historial.
 6. **Dashboard** para el resumen del día y **Reportes** para ver cualquier
    período: ventas, gastos, lo más vendido, medios de pago y margen.
+
+### Descuentos y recargos
+
+En el pedido, **+ Descuento / recargo** permite elegir descuento o recargo,
+por **porcentaje** (ej. 10%) o por **monto fijo** (ej. $2.000). Si después se
+agregan o sacan productos, el total se recalcula solo. Se puede quitar con
+**Quitar**. Aparece en la cuenta impresa y en el detalle de la venta, y los
+reportes y la caja usan el total ya con el ajuste.
 
 ### Comandas e impresión de tickets
 

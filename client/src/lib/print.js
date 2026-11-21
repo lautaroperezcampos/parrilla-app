@@ -1,4 +1,4 @@
-import { dateTimeLabel, money, qty } from './format.js'
+import { adjustmentLabel, dateTimeLabel, money, qty } from './format.js'
 
 // Impresión de comandas y cuentas en impresoras de ticket (térmicas).
 // Se imprime con el diálogo del navegador: ahí se elige la impresora
@@ -98,6 +98,14 @@ export function printBill({ order, groups }) {
     `<h1>PARRILLA DON BLAS</h1>
      <p class="center">${escape(orderOrigin(order))} · ${escape(dateTimeLabel(new Date()))}</p>
      <hr>${rows}<hr>
+     ${
+       adjustmentLabel(order)
+         ? `<div class="row"><span>Subtotal</span><span>${money(order.subtotal)}</span></div>
+            <div class="row"><span>${escape(adjustmentLabel(order))}</span><span>${
+              Number(order.total) >= Number(order.subtotal) ? '+' : '-'
+            } ${money(Math.abs(order.total - order.subtotal))}</span></div>`
+         : ''
+     }
      <div class="row total"><span>TOTAL</span><span>${money(order.total)}</span></div>
      <hr>
      <p class="center small">NO VÁLIDO COMO FACTURA</p>

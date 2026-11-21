@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal.jsx'
 import { getOrder, voidOrder } from '../lib/api/orders.js'
-import { dateTimeLabel, money, paymentLabel, qty } from '../lib/format.js'
+import { adjustmentLabel, dateTimeLabel, money, paymentLabel, qty } from '../lib/format.js'
 import { btnSecondary } from '../lib/ui.js'
 
 export default function SaleDetailModal({ orderId, onClose, onVoided }) {
@@ -59,6 +59,17 @@ export default function SaleDetailModal({ orderId, onClose, onVoided }) {
                 <span>{money(i.quantity * i.unit_price)}</span>
               </li>
             ))}
+            {adjustmentLabel(order) && (
+              <li className="flex justify-between px-3 py-2 text-carbon/70">
+                <span>
+                  {adjustmentLabel(order)} (subtotal {money(order.subtotal)})
+                </span>
+                <span>
+                  {Number(order.total) >= Number(order.subtotal) ? '+ ' : '− '}
+                  {money(Math.abs(order.total - order.subtotal))}
+                </span>
+              </li>
+            )}
             <li className="flex justify-between px-3 py-2 font-medium">
               <span>Total</span>
               <span>{money(order.total)}</span>

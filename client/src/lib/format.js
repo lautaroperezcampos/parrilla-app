@@ -77,6 +77,15 @@ export function elapsedLabel(timestamp) {
   return `${Math.floor(minutes / 60)} h ${minutes % 60} min`
 }
 
+// "Descuento 10%", "Recargo", o null si el pedido no tiene ajuste.
+// El monto del ajuste es total - subtotal.
+export function adjustmentLabel(order) {
+  if (!order?.adjustment_kind || Number(order.adjustment_value) === 0) return null
+  const value = Number(order.adjustment_value)
+  const name = value < 0 ? 'Descuento' : 'Recargo'
+  return order.adjustment_kind === 'porcentaje' ? `${name} ${qty(Math.abs(value))}%` : name
+}
+
 export const PAYMENT_METHODS = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'transferencia', label: 'Transferencia' },

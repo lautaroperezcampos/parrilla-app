@@ -113,6 +113,17 @@ export async function removeOrderItem(itemId) {
   if (error) throw error
 }
 
+// Descuento o recargo. kind: 'porcentaje' | 'monto' | null (quitar).
+// value: negativo = descuento, positivo = recargo.
+export async function setOrderAdjustment(orderId, kind, value) {
+  const { error } = await supabase.rpc('set_order_adjustment', {
+    p_order_id: orderId,
+    p_kind: kind,
+    p_value: value
+  })
+  if (error) throw error
+}
+
 // Después de imprimir las comandas: todo lo del pedido queda como enviado.
 export async function markOrderSent(orderId) {
   const { error } = await supabase.rpc('mark_order_sent', { p_order_id: orderId })
