@@ -39,7 +39,7 @@ export async function getActiveOrders() {
 export async function getOrder(id) {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, tables(number), order_items(*)')
+    .select('*, tables(number), order_items(*, products(print_station))')
     .eq('id', id)
     .order('id', { referencedTable: 'order_items' })
     .single()
@@ -110,6 +110,12 @@ export async function updateOrderItemQuantity(itemId, quantity) {
 
 export async function removeOrderItem(itemId) {
   const { error } = await supabase.from('order_items').delete().eq('id', itemId)
+  if (error) throw error
+}
+
+// Después de imprimir las comandas: todo lo del pedido queda como enviado.
+export async function markOrderSent(orderId) {
+  const { error } = await supabase.rpc('mark_order_sent', { p_order_id: orderId })
   if (error) throw error
 }
 

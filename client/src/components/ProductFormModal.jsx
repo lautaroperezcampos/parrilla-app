@@ -14,7 +14,8 @@ export default function ProductFormModal({ product, categories, onSave, onClose 
     cost_price: product?.cost_price ?? 0,
     sale_price: product?.sale_price ?? 0,
     track_stock: product?.track_stock ?? true,
-    is_sellable: product?.is_sellable ?? true
+    is_sellable: product?.is_sellable ?? true,
+    print_station: product?.print_station ?? ''
   })
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -35,6 +36,7 @@ export default function ProductFormModal({ product, categories, onSave, onClose 
       await onSave({
         ...form,
         category_id: form.category_id || null,
+        print_station: form.print_station || null,
         stock: Number(form.stock),
         min_stock: Number(form.min_stock),
         cost_price: Number(form.cost_price),
@@ -75,6 +77,19 @@ export default function ProductFormModal({ product, categories, onSave, onClose 
                 {c.name}
               </option>
             ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-xs text-carbon/60">¿Dónde se prepara? (comanda)</label>
+          <select
+            className={inputClass}
+            value={form.print_station}
+            onChange={(e) => update('print_station', e.target.value)}
+          >
+            <option value="">No sale en comanda (bebidas y otros)</option>
+            <option value="parrilla">Parrilla</option>
+            <option value="cocina">Cocina</option>
           </select>
         </div>
 

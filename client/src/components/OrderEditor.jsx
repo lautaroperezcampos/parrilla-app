@@ -5,6 +5,7 @@ import {
   cancelOrder,
   discardEmptyOrder,
   getOrder,
+  markOrderSent,
   payOrder,
   removeOrderItem,
   setOrderNotes,
@@ -13,6 +14,7 @@ import {
 } from '../lib/api/orders.js'
 import { getProducts } from '../lib/api/products.js'
 import { money, qty, PAYMENT_METHODS } from '../lib/format.js'
+import { printBill, printComanda, STATIONS } from '../lib/print.js'
 import { btnPrimary, btnSecondary, btnSmall, inputClass } from '../lib/ui.js'
 
 const STATUS_STEPS = [
@@ -21,6 +23,28 @@ const STATUS_STEPS = [
   { value: 'listo', label: 'Listo' },
   { value: 'pagando', label: 'Pidió la cuenta' }
 ]
+
+// Cómo se agrupan los ítems en pantalla y en la cuenta. Lo que no tiene
+// estación (bebidas y otros) no sale en ninguna comanda.
+const GROUPS = [
+  { station: 'parrilla', label: 'Parrilla' },
+  { station: 'cocina', label: 'Cocina' },
+  { station: null, label: 'Bebidas' }
+]
+
+function stationOf(item) {
+  return item.products?.print_station ?? null
+}
+
+function pendingOf(item) {
+  return Number(item.quantity) - Number(item.sent_quantity ?? 0)
+}
+
+function groupItems(items) {
+  return GROUPS.map((g) => ({ ...g, items: items.filter((i) => stationOf(i) === g.station) })).filter(
+    (g) => g.items.length > 0
+  )
+}
 
 // Pantalla para cargar productos a un pedido (de mesa o de mostrador),
 // cambiar su estado y cobrarlo.
@@ -80,8 +104,39 @@ export default function OrderEditor({ orderId, onClose }) {
   }
 
   function handleQuantity(item, newQuantity) {
-    if (!(newQuantity > 0)) return run(() => removeOrderItem(item.id))
+    if (!(newQuantity > 0)) {
+      if (stationOf(item) && Number(item.sent_quantity) > 0) {
+        const ok = confirm(
+          `"${item.product_name}" ya se mandó a ${STATIONS[stationOf(item)].toLowerCase()}. ¿Sacarlo igual? Avisá para que no lo preparen.`
+        )
+        if (!ok) return
+      }
+      return run(() => removeOrderItem(item.id))
+    }
     return run(() => updateOrderItemQuantity(item.id, newQuantity))
+  }
+
+  // Imprime una comanda por estación con lo nuevo desde la última vez.
+  async function handleSendComanda() {
+    const comandas = Object.keys(STATIONS)
+      .map((station) => ({
+        station,
+        lines: order.order_items
+          .filter((i) => stationOf(i) === station && pendingOf(i) !== 0)
+          .map((i) => ({ name: i.product_name, quantity: pendingOf(i) }))
+      }))
+      .filter((c) => c.lines.length > 0)
+
+    if (comandas.length === 0) {
+      setErrorMsg('No hay nada nuevo para mandar a la parrilla ni a la cocina.')
+      return
+    }
+    setErrorMsg('')
+    for (const c of comandas) printComanda({ ...c, order })
+
+    if (confirm('¿Salieron bien las comandas?\n\nAceptar: quedan como enviadas.\nCancelar: se pueden volver a imprimir.')) {
+      run(() => markOrderSent(orderId))
+    }
   }
 
   async function handlePay(method) {
@@ -198,13 +253,25 @@ export default function OrderEditor({ orderId, onClose }) {
               {order.order_items.length === 0 ? (
                 <p className="p-4 text-sm text-carbon/50">Tocá un producto para agregarlo.</p>
               ) : (
+                groupItems(order.order_items).map((group) => (
+                <div key={group.label}>
+                <p className="bg-carbon/5 px-3 py-1 text-xs font-medium text-carbon/60">
+                  {group.label}
+                  {!group.station && <span className="font-normal"> · no sale en comanda</span>}
+                </p>
                 <ul className="divide-y divide-carbon/5">
-                  {order.order_items.map((item) => (
+                  {group.items.map((item) => (
                     <li key={item.id} className="flex items-center gap-2 px-3 py-2 text-sm">
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{item.product_name}</p>
                         <p className="text-xs text-carbon/50">
                           {qty(item.quantity)} × {money(item.unit_price)}
+                          {group.station && pendingOf(item) > 0 && (
+                            <span className="ml-1.5 font-medium text-brasa">· sin enviar {qty(pendingOf(item))}</span>
+                          )}
+                          {group.station && pendingOf(item) < 0 && (
+                            <span className="ml-1.5 font-medium text-estado-ocupada">· anular {qty(-pendingOf(item))}</span>
+                          )}
                         </p>
                       </div>
                       <button
@@ -234,6 +301,8 @@ export default function OrderEditor({ orderId, onClose }) {
                     </li>
                   ))}
                 </ul>
+                </div>
+                ))
               )}
               <div className="flex justify-between border-t border-carbon/10 px-3 py-3">
                 <span className="text-sm text-carbon/60">Total</span>
@@ -248,6 +317,23 @@ export default function OrderEditor({ orderId, onClose }) {
             />
 
             {errorMsg && <p className="text-sm text-estado-ocupada">{errorMsg}</p>}
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                disabled={busy || order.order_items.length === 0}
+                onClick={handleSendComanda}
+                className={btnSecondary}
+              >
+                Enviar comanda
+              </button>
+              <button
+                disabled={busy || order.order_items.length === 0}
+                onClick={() => printBill({ order, groups: groupItems(order.order_items) })}
+                className={btnSecondary}
+              >
+                Imprimir cuenta
+              </button>
+            </div>
 
             {paying ? (
               <div className="rounded-md bg-crema p-3">

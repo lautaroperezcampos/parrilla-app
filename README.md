@@ -55,6 +55,7 @@ Celular / compu (navegador)
 - `supabase/` — la base de datos.
   - `schema.sql` — tablas iniciales.
   - `migrations/002_app_completa.sql` — cobros, caja, reportes y seguridad (login).
+  - `migrations/003_comandas.sql` — comandas para parrilla y cocina.
   - `datos/carta_don_blas.sql` — carga los productos de la carta.
 
 ---
@@ -129,6 +130,36 @@ Y abrí `http://localhost:5173`. El archivo `client/.env` tiene que tener
    si sobra o falta plata y guarda el cierre en el historial.
 6. **Dashboard** para el resumen del día y **Reportes** para ver cualquier
    período: ventas, gastos, lo más vendido, medios de pago y margen.
+
+### Comandas e impresión de tickets
+
+- Cada producto tiene **"¿Dónde se prepara?"** (Stock → Editar): **Parrilla**,
+  **Cocina** o **No sale en comanda** (bebidas). La migración 003 lo asigna
+  solo según la categoría: Parrilla → parrilla; Entradas, Cocina rápida y
+  Postres → cocina; el resto (bebidas, vinos) no sale en comanda.
+- En el pedido, **Enviar comanda** imprime una comanda para la parrilla y
+  otra para la cocina, solo con lo **nuevo** desde la última vez. Si se sacó
+  algo que ya se había mandado, sale como **ANULAR**. Al final pregunta si
+  salieron bien: con **Aceptar** quedan como enviadas.
+- **Imprimir cuenta** imprime el detalle para el cliente, con las bebidas en
+  su propio grupo y la leyenda "No válido como factura".
+- Las bebidas se cobran en la misma cuenta y se ven en pantalla, pero no
+  salen en ninguna comanda.
+
+**Configurar la impresora (una vez, en la compu de la caja):**
+1. Conectá la impresora de tickets por USB e instalá su driver. Tiene que
+   aparecer en Windows → Configuración → Impresoras.
+2. En la app, tocá **Imprimir cuenta**. En la ventana de impresión de Chrome
+   elegí esa impresora y, en **Más opciones**: Márgenes **Ninguno**, Escala
+   **100**, y destildá **Encabezados y pies de página**. Chrome recuerda la
+   configuración para la próxima.
+3. Si la impresora es de 58 mm en vez de 80 mm, hay que cambiar el ancho en
+   `client/src/lib/print.js`.
+
+Con dos impresoras (parrilla y cocina) conectadas a la misma compu, en cada
+comanda se elige la impresora en esa ventana. Para que cada comanda vaya
+sola a su impresora sin elegir nada, el próximo paso es instalar un
+programa de impresión en esa compu (por ejemplo, QZ Tray).
 
 ### Stock
 
