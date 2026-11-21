@@ -3,6 +3,7 @@ import Modal from './Modal.jsx'
 import { getOrder, voidOrder } from '../lib/api/orders.js'
 import { adjustmentLabel, dateTimeLabel, money, paymentLabel, qty } from '../lib/format.js'
 import { btnSecondary } from '../lib/ui.js'
+import { printBill } from '../lib/print.js'
 
 export default function SaleDetailModal({ orderId, onClose, onVoided }) {
   const [order, setOrder] = useState(null)
@@ -80,9 +81,14 @@ export default function SaleDetailModal({ orderId, onClose, onVoided }) {
           {errorMsg && <p className="text-estado-ocupada">{errorMsg}</p>}
 
           {order.status === 'pagado' && (
-            <button onClick={handleVoid} disabled={busy} className={`${btnSecondary} w-full text-estado-ocupada`}>
-              Anular venta
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => printBill(order)} className={btnSecondary}>
+                Reimprimir ticket
+              </button>
+              <button onClick={handleVoid} disabled={busy} className={`${btnSecondary} text-estado-ocupada`}>
+                Anular venta
+              </button>
+            </div>
           )}
         </div>
       )}

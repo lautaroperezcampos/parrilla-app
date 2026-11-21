@@ -15,7 +15,7 @@ import {
 } from '../lib/api/orders.js'
 import { getProducts } from '../lib/api/products.js'
 import { adjustmentLabel, money, qty, PAYMENT_METHODS } from '../lib/format.js'
-import { printBill, printComanda, STATIONS } from '../lib/print.js'
+import { groupItems, printBill, printComanda, stationOf, STATIONS } from '../lib/print.js'
 import { btnPrimary, btnSecondary, btnSmall, inputClass } from '../lib/ui.js'
 
 const STATUS_STEPS = [
@@ -25,26 +25,8 @@ const STATUS_STEPS = [
   { value: 'pagando', label: 'Pidió la cuenta' }
 ]
 
-// Cómo se agrupan los ítems en pantalla y en la cuenta. Lo que no tiene
-// estación (bebidas y otros) no sale en ninguna comanda.
-const GROUPS = [
-  { station: 'parrilla', label: 'Parrilla' },
-  { station: 'cocina', label: 'Cocina' },
-  { station: null, label: 'Bebidas' }
-]
-
-function stationOf(item) {
-  return item.products?.print_station ?? null
-}
-
 function pendingOf(item) {
   return Number(item.quantity) - Number(item.sent_quantity ?? 0)
-}
-
-function groupItems(items) {
-  return GROUPS.map((g) => ({ ...g, items: items.filter((i) => stationOf(i) === g.station) })).filter(
-    (g) => g.items.length > 0
-  )
 }
 
 // Pantalla para cargar productos a un pedido (de mesa o de mostrador),
@@ -372,7 +354,7 @@ export default function OrderEditor({ orderId, onClose }) {
               </button>
               <button
                 disabled={busy || order.order_items.length === 0}
-                onClick={() => printBill({ order, groups: groupItems(order.order_items) })}
+                onClick={() => printBill(order)}
                 className={btnSecondary}
               >
                 Imprimir cuenta

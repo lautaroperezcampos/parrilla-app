@@ -1,4 +1,4 @@
-import { adjustmentLabel, dateTimeLabel, money, qty } from './format.js'
+import { adjustmentLabel, dateTimeLabel, money, paymentLabel, qty } from './format.js'
 
 // Impresión de comandas y cuentas en impresoras de ticket (térmicas).
 // Se imprime con el diálogo del navegador: ahí se elige la impresora
@@ -11,6 +11,24 @@ const PRINT_MM = 72
 export const STATIONS = {
   parrilla: 'Parrilla',
   cocina: 'Cocina'
+}
+
+// Cómo se agrupan los ítems en pantalla y en la cuenta. Lo que no tiene
+// estación (bebidas y otros) no sale en ninguna comanda.
+const GROUPS = [
+  { station: 'parrilla', label: 'Parrilla' },
+  { station: 'cocina', label: 'Cocina' },
+  { station: null, label: 'Bebidas' }
+]
+
+export function stationOf(item) {
+  return item.products?.print_station ?? null
+}
+
+export function groupItems(items) {
+  return GROUPS.map((g) => ({ ...g, items: items.filter((i) => stationOf(i) === g.station) })).filter(
+    (g) => g.items.length > 0
+  )
 }
 
 const CSS = `
@@ -75,10 +93,11 @@ export function printComanda({ station, order, lines }) {
   )
 }
 
-// La cuenta para el cliente. groups: [{ label, items }] con los ítems
-// del pedido (las bebidas van en su propio grupo).
-export function printBill({ order, groups }) {
-  const rows = groups
+// La cuenta para el cliente, con los ítems agrupados (las bebidas van en
+// su propio grupo). Si la venta ya se cobró, sale con la fecha del cobro
+// y el medio de pago.
+export function printBill(order) {
+  const rows = groupItems(order.order_items)
     .map(
       (g) =>
         `<h2>${escape(g.label)}</h2>` +
@@ -96,7 +115,8 @@ export function printBill({ order, groups }) {
   printHtml(
     'Cuenta',
     `<h1>PARRILLA DON BLAS</h1>
-     <p class="center">${escape(orderOrigin(order))} · ${escape(dateTimeLabel(new Date()))}</p>
+     <p class="center">${escape(orderOrigin(order))} · ${escape(dateTimeLabel(order.paid_at ?? new Date()))}</p>
+     ${order.paid_at ? `<p class="center">Venta #${order.id}</p>` : ''}
      <hr>${rows}<hr>
      ${
        adjustmentLabel(order)
@@ -107,6 +127,7 @@ export function printBill({ order, groups }) {
          : ''
      }
      <div class="row total"><span>TOTAL</span><span>${money(order.total)}</span></div>
+     ${order.payment_method ? `<p>Pago: ${escape(paymentLabel(order.payment_method))}</p>` : ''}
      <hr>
      <p class="center small">NO VÁLIDO COMO FACTURA</p>
      <p class="center">¡Gracias por su visita!</p>`
