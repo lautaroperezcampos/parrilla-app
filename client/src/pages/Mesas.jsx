@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import OrderEditor from '../components/OrderEditor.jsx'
 import TablesAdminModal from '../components/TablesAdminModal.jsx'
-import { getActiveOrders, getTables, openOrder, subscribeToOrders } from '../lib/api/orders.js'
+import FloorPlan from '../components/FloorPlan.jsx'
+import { getActiveOrders, getTables, openOrder, subscribeToOrders, updateTable } from '../lib/api/orders.js'
 import { getOpenCashSession } from '../lib/api/cash.js'
 import { elapsedLabel, money } from '../lib/format.js'
-import { btnSecondary, emptyBox } from '../lib/ui.js'
+import { btnPrimary, btnSecondary, emptyBox } from '../lib/ui.js'
 
 // Estado visual de la mesa según el estado de su pedido activo.
 const ESTADOS = {
@@ -16,6 +17,14 @@ const ESTADOS = {
   pagando: { label: 'Pidió la cuenta', className: 'bg-estado-pagando' }
 }
 
+function readSavedView() {
+  try {
+    return localStorage.getItem('mesas-vista') === 'lista' ? 'lista' : 'plano'
+  } catch {
+    return 'plano'
+  }
+}
+
 export default function Mesas() {
   const [tables, setTables] = useState([])
   const [orders, setOrders] = useState([])
@@ -24,6 +33,30 @@ export default function Mesas() {
   const [errorMsg, setErrorMsg] = useState('')
   const [editingOrderId, setEditingOrderId] = useState(null)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [view, setView] = useState(() => readSavedView())
+  const [editingPlan, setEditingPlan] = useState(false)
+
+  function changeView(v) {
+    setView(v)
+    setEditingPlan(false)
+    try {
+      localStorage.setItem('mesas-vista', v)
+    } catch {
+      // sin almacenamiento: se usa el plano por defecto la próxima vez
+    }
+  }
+
+  // Al soltar una mesa en el plano: se ve en el lugar nuevo enseguida y
+  // se guarda en la base.
+  async function handleMove(table, x, y) {
+    setTables((prev) => prev.map((t) => (t.id === table.id ? { ...t, pos_x: x, pos_y: y } : t)))
+    try {
+      await updateTable(table.id, { pos_x: x, pos_y: y })
+    } catch (err) {
+      setErrorMsg('No se pudo guardar la posición: ' + err.message)
+      loadAll()
+    }
+  }
 
   const loadAll = useCallback(async () => {
     try {
@@ -80,10 +113,43 @@ export default function Mesas() {
             {occupied} de {tables.length} ocupadas. Tocá una mesa para abrirla o ver su pedido.
           </p>
         </div>
-        <button onClick={() => setAdminOpen(true)} className={btnSecondary}>
-          Administrar mesas
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <div className="flex overflow-hidden rounded-md ring-1 ring-carbon/15">
+            {[
+              ['plano', 'Plano'],
+              ['lista', 'Lista']
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => changeView(value)}
+                className={`px-4 py-2.5 text-sm font-medium ${
+                  view === value ? 'bg-carbon text-crema' : 'bg-white text-carbon/70 hover:bg-crema'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {view === 'plano' && (
+            <button
+              onClick={() => setEditingPlan((v) => !v)}
+              className={editingPlan ? btnPrimary : btnSecondary}
+            >
+              {editingPlan ? 'Listo' : 'Acomodar mesas'}
+            </button>
+          )}
+          <button onClick={() => setAdminOpen(true)} className={btnSecondary}>
+            Administrar mesas
+          </button>
+        </div>
       </div>
+
+      {editingPlan && (
+        <p className="mt-4 rounded-md bg-brasa/10 px-4 py-3 text-sm">
+          Arrastrá cada mesa a su lugar. Se guarda sola al soltarla. Para crear otra zona (por ejemplo
+          "Patio"), cambiásela a una mesa en "Administrar mesas". Cuando termines, tocá "Listo".
+        </p>
+      )}
 
       {!cashOpen && (
         <p className="mt-4 rounded-md bg-estado-preparacion/10 px-4 py-3 text-sm text-carbon">
@@ -110,6 +176,17 @@ export default function Mesas() {
         <p className="mt-6 text-sm text-carbon/50">Cargando...</p>
       ) : tables.length === 0 ? (
         <div className={`mt-6 ${emptyBox}`}>No hay mesas cargadas. Agregalas desde "Administrar mesas".</div>
+      ) : view === 'plano' ? (
+        <div className="mt-4">
+          <FloorPlan
+            tables={tables}
+            ordersByTable={ordersByTable}
+            estados={ESTADOS}
+            editing={editingPlan}
+            onTableClick={handleTableClick}
+            onMove={handleMove}
+          />
+        </div>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {tables.map((t) => {

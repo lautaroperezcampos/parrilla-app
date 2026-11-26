@@ -89,10 +89,13 @@ export function adjustmentLabel(order) {
 export const PAYMENT_METHODS = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'transferencia', label: 'Transferencia' },
-  { value: 'tarjeta', label: 'Tarjeta' },
-  { value: 'otro', label: 'Otro' }
+  { value: 'debito', label: 'Tarjeta de débito' },
+  { value: 'credito', label: 'Tarjeta de crédito' }
 ]
 
+// 'tarjeta' y 'otro' solo aparecen en ventas y gastos viejos.
+const OLD_PAYMENT_LABELS = { tarjeta: 'Tarjeta', otro: 'Otro' }
+
 export function paymentLabel(value) {
-  return PAYMENT_METHODS.find((m) => m.value === value)?.label ?? '—'
+  return PAYMENT_METHODS.find((m) => m.value === value)?.label ?? OLD_PAYMENT_LABELS[value] ?? '—'
 }

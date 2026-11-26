@@ -31,21 +31,25 @@ export function groupItems(items) {
   )
 }
 
+// Las impresoras térmicas reciben la hoja como imagen: las letras finas o
+// grises salen cortadas. Por eso todo va en negro puro, negrita y una
+// letra sin serifa, sin suavizado de bordes.
 const CSS = `
   @page { size: ${PAPER_MM}mm auto; margin: 0; }
-  * { box-sizing: border-box; }
-  body { width: ${PRINT_MM}mm; margin: 0 auto; padding: 3mm 0 6mm;
-         font-family: 'Courier New', monospace; font-size: 12px; color: #000; }
-  h1 { font-size: 20px; text-align: center; margin: 0 0 2px; }
-  h2 { font-size: 13px; margin: 6px 0 2px; text-transform: uppercase; }
+  * { box-sizing: border-box; color: #000 !important; -webkit-font-smoothing: none; }
+  body { width: ${PRINT_MM}mm; margin: 0 auto; padding: 2mm 0 4mm;
+         font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 700;
+         line-height: 1.25; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1 { font-size: 22px; font-weight: 900; text-align: center; margin: 0 0 2px; }
+  h2 { font-size: 14px; font-weight: 900; margin: 6px 0 2px; text-transform: uppercase; }
   p { margin: 2px 0; }
-  hr { border: 0; border-top: 1px dashed #000; margin: 6px 0; }
+  hr { border: 0; border-top: 2px dashed #000; margin: 6px 0; }
   .center { text-align: center; }
   .row { display: flex; justify-content: space-between; gap: 6px; }
-  .item { font-size: 16px; font-weight: bold; margin: 4px 0; }
-  .cancel { font-size: 16px; font-weight: bold; margin: 4px 0; }
-  .total { font-size: 18px; font-weight: bold; }
-  .small { font-size: 10px; }
+  .item { font-size: 18px; font-weight: 900; margin: 5px 0; }
+  .cancel { font-size: 18px; font-weight: 900; margin: 5px 0; text-decoration: underline; }
+  .total { font-size: 22px; font-weight: 900; }
+  .small { font-size: 12px; }
 `
 
 function escape(text) {

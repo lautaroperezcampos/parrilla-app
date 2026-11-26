@@ -57,6 +57,7 @@ Celular / compu (navegador)
   - `migrations/002_app_completa.sql` — cobros, caja, reportes y seguridad (login).
   - `migrations/003_comandas.sql` — comandas para parrilla y cocina.
   - `migrations/004_descuentos.sql` — descuentos y recargos en los pedidos.
+  - `migrations/005_debito_credito_y_plano.sql` — débito/crédito y plano de mesas.
   - `datos/carta_don_blas.sql` — carga los productos de la carta.
 
 ---
@@ -131,6 +132,20 @@ Y abrí `http://localhost:5173`. El archivo `client/.env` tiene que tener
    si sobra o falta plata y guarda el cierre en el historial.
 6. **Dashboard** para el resumen del día y **Reportes** para ver cualquier
    período: ventas, gastos, lo más vendido, medios de pago y margen.
+
+### Plano de mesas
+
+En **Mesas** se puede ver el **Plano** (cada zona es un recuadro con las
+mesas adentro, del color de su estado) o la **Lista**. Con **Acomodar mesas**
+se arrastra cada mesa a su lugar real; se guarda sola al soltarla. Para tener
+varias zonas (Salón, Patio...), en **Administrar mesas** se escribe la zona
+de cada mesa.
+
+### Medios de pago
+
+Al cobrar se elige **Efectivo**, **Transferencia**, **Tarjeta de débito** o
+**Tarjeta de crédito**. Solo el efectivo suma a la caja; los demás se ven en
+el resumen de la caja y en Reportes.
 
 ### Descuentos y recargos
 

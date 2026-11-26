@@ -56,10 +56,12 @@ export default function Ventas() {
 
   const paid = sales.filter((s) => s.status === 'pagado')
   const total = paid.reduce((sum, s) => sum + Number(s.total), 0)
-  const byMethod = PAYMENT_METHODS.map((m) => ({
-    ...m,
-    total: paid.filter((s) => s.payment_method === m.value).reduce((sum, s) => sum + Number(s.total), 0)
-  })).filter((m) => m.total > 0)
+  // Por cada medio de pago que aparece (incluye 'tarjeta' de ventas viejas).
+  const byMethod = [...new Set(paid.map((s) => s.payment_method))].map((value) => ({
+    value,
+    label: paymentLabel(value),
+    total: paid.filter((s) => s.payment_method === value).reduce((sum, s) => sum + Number(s.total), 0)
+  }))
 
   return (
     <div>

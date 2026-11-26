@@ -12,8 +12,8 @@ export async function getTables({ includeInactive = false } = {}) {
   return data
 }
 
-export async function createTable({ number, seats }) {
-  const { error } = await supabase.from('tables').insert({ number, seats })
+export async function createTable({ number, seats, zone }) {
+  const { error } = await supabase.from('tables').insert({ number, seats, zone })
   if (error) {
     if (error.code === '23505') throw new Error(`Ya existe la mesa ${number}`)
     throw error
