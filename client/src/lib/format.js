@@ -77,6 +77,13 @@ export function elapsedLabel(timestamp) {
   return `${Math.floor(minutes / 60)} h ${minutes % 60} min`
 }
 
+// "Mesa 4" o "Mostrador". table_number queda guardado en el pedido aunque
+// la mesa se haya borrado después.
+export function placeLabel(order) {
+  const number = order?.tables?.number ?? order?.table_number
+  return number != null ? `Mesa ${number}` : 'Mostrador'
+}
+
 // "Descuento 10%", "Recargo", o null si el pedido no tiene ajuste.
 // El monto del ajuste es total - subtotal.
 export function adjustmentLabel(order) {

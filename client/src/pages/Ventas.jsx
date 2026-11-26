@@ -8,6 +8,7 @@ import {
   dayRangeToTimestamps,
   money,
   paymentLabel,
+  placeLabel,
   PAYMENT_METHODS,
   todayISO
 } from '../lib/format.js'
@@ -145,7 +146,7 @@ export default function Ventas() {
                 >
                   <td className="px-4 py-3">{s.id}</td>
                   <td className="px-4 py-3">{dateTimeLabel(s.paid_at)}</td>
-                  <td className="px-4 py-3">{s.tables ? `Mesa ${s.tables.number}` : 'Mostrador'}</td>
+                  <td className="px-4 py-3">{placeLabel(s)}</td>
                   <td className="px-4 py-3">{paymentLabel(s.payment_method)}</td>
                   <td className="px-4 py-3 text-right font-medium">{money(s.total)}</td>
                 </tr>

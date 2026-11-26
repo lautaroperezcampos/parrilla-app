@@ -22,6 +22,15 @@ export async function createTable({ number, seats, zone }) {
 
 export async function updateTable(id, changes) {
   const { error } = await supabase.from('tables').update(changes).eq('id', id)
+  if (error) {
+    if (error.code === '23505') throw new Error(`Ya existe la mesa ${changes.number}`)
+    throw error
+  }
+}
+
+// Borra la mesa. Sus ventas viejas quedan en el historial con su número.
+export async function deleteTable(id) {
+  const { error } = await supabase.rpc('delete_table', { p_table_id: id })
   if (error) throw error
 }
 

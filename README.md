@@ -58,6 +58,7 @@ Celular / compu (navegador)
   - `migrations/003_comandas.sql` — comandas para parrilla y cocina.
   - `migrations/004_descuentos.sql` — descuentos y recargos en los pedidos.
   - `migrations/005_debito_credito_y_plano.sql` — débito/crédito y plano de mesas.
+  - `migrations/006_borrar_mesas.sql` — borrar mesas sin perder el historial de ventas.
   - `datos/carta_don_blas.sql` — carga los productos de la carta.
 
 ---
@@ -137,8 +138,13 @@ Y abrí `http://localhost:5173`. El archivo `client/.env` tiene que tener
 
 En **Mesas** se puede ver el **Plano** (cada zona es un recuadro con las
 mesas adentro, del color de su estado) o la **Lista**. Con **Acomodar mesas**
-se arrastra cada mesa a su lugar real; se guarda sola al soltarla. Para tener
-varias zonas (Salón, Patio...), en **Administrar mesas** se escribe la zona
+se arrastra cada mesa a su lugar real; se guarda sola al soltarla.
+
+En **Administrar mesas** se agregan mesas, se cambia el número, los lugares
+y la zona de cada una (se guarda al salir del casillero o con Enter), y se
+**borran**. Una mesa con un pedido abierto no se puede borrar hasta cobrarlo
+o cancelarlo; las ventas viejas de una mesa borrada quedan en el historial
+con su número. Para tener varias zonas (Salón, Patio...), se escribe la zona
 de cada mesa.
 
 ### Medios de pago
@@ -179,6 +185,17 @@ reportes y la caja usan el total ya con el ajuste.
    configuración para la próxima.
 3. Si la impresora es de 58 mm en vez de 80 mm, hay que cambiar el ancho en
    `client/src/lib/print.js`.
+
+**Imprimir sin la ventana de Chrome (recomendado en la compu de la caja):**
+1. En Windows → Configuración → Impresoras, poné la Hasar como
+   **impresora predeterminada** (y destildá "Permitir que Windows administre
+   la impresora predeterminada").
+2. Creá un acceso directo en el escritorio: clic derecho → Nuevo → Acceso
+   directo, y en la ubicación pegá (en una sola línea):
+   `"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing https://parrilla-app-nine.vercel.app`
+   Nombralo "Don Blas App".
+3. Cerrá **todas** las ventanas de Chrome y abrí la app desde ese acceso
+   directo. Desde ahí, imprimir sale directo a la Hasar, sin ventana.
 
 Con dos impresoras (parrilla y cocina) conectadas a la misma compu, en cada
 comanda se elige la impresora en esa ventana. Para que cada comanda vaya

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal.jsx'
 import { getOrder, voidOrder } from '../lib/api/orders.js'
-import { adjustmentLabel, dateTimeLabel, money, paymentLabel, qty } from '../lib/format.js'
+import { adjustmentLabel, dateTimeLabel, money, paymentLabel, placeLabel, qty } from '../lib/format.js'
 import { btnSecondary } from '../lib/ui.js'
 import { printBill } from '../lib/print.js'
 
@@ -39,7 +39,7 @@ export default function SaleDetailModal({ orderId, onClose, onVoided }) {
       ) : (
         <div className="space-y-4 text-sm">
           <div className="grid grid-cols-2 gap-2 text-carbon/70">
-            <span>{order.tables ? `Mesa ${order.tables.number}` : 'Mostrador'}</span>
+            <span>{placeLabel(order)}</span>
             <span className="text-right">{dateTimeLabel(order.paid_at)}</span>
             <span>Pago: {paymentLabel(order.payment_method)}</span>
             <span className="text-right">

@@ -1,4 +1,4 @@
-import { adjustmentLabel, dateTimeLabel, money, paymentLabel, qty } from './format.js'
+import { adjustmentLabel, dateTimeLabel, money, paymentLabel, placeLabel, qty } from './format.js'
 
 // Impresión de comandas y cuentas en impresoras de ticket (térmicas).
 // Se imprime con el diálogo del navegador: ahí se elige la impresora
@@ -57,7 +57,8 @@ function escape(text) {
 }
 
 function orderOrigin(order) {
-  return order.table_id ? `MESA ${order.tables?.number ?? ''}` : `MOSTRADOR #${order.id}`
+  const place = placeLabel(order)
+  return place === 'Mostrador' ? `MOSTRADOR #${order.id}` : place.toUpperCase()
 }
 
 // Imprime un HTML en un iframe oculto. En Chrome, print() espera a que
